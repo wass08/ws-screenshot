@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1.6
+# Drop-in replacement for elestio/ws-screenshot.slim: same Chromium/Node/fonts (identical PDF output),
+# with the browser-leak fixes from API/ and tini as PID 1 to reap orphaned chromium processes.
+#   docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.patched -t <registry>/ws-screenshot:patched --push .
+FROM elestio/ws-screenshot.slim:latest@sha256:c1a75d559374c632e7d0343ef4aad8f28f9859db4ffa968cd6917102b232ad56 AS base-amd64
+FROM elestio/ws-screenshot.slim:latest-arm@sha256:b5250263046145b1227b525ec1f2e2dbcc6d8acbe2c7d06eb31e7f88a13b2034 AS base-arm64
+
+ARG TARGETARCH
+FROM base-${TARGETARCH}
+
+ARG TARGETARCH
+ADD --chmod=755 https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-${TARGETARCH} /tini
+RUN case "${TARGETARCH}" in \
+      amd64) sum=c5b0666b4cb676901f90dfcb37106783c5fe2077b04590973b885950611b30ee ;; \
+      arm64) sum=eae1d3aa50c48fb23b8cbdf4e369d0910dfc538566bfd09df89a774aa84a48b9 ;; \
+    esac \
+ && echo "${sum}  /tini" | sha256sum -c -
+
+WORKDIR /usr/src/app
+COPY API/ ./API/
+
+EXPOSE 3000
+# -g forwards signals to the whole process group so chromium stops with the container
+ENTRYPOINT ["/tini", "-g", "--", "docker-entrypoint.sh"]
+CMD ["node", "./index.js", "-r", ".", "--oc", "1"]

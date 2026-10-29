@@ -25,17 +25,15 @@ exports.handler = async (event, context, callback) => {
     return;
   }
 
-  while (sharedmem.getInteger("nbPuppeteerProcess") >= maxConcurrency) {
-    await tools.sleep(20);
-  }
-
-  sharedmem.incInteger("nbPuppeteerProcess", 1);
-
   var url = event.queryStringParameters.url;
   if (url == null || url == "") {
     url = "https://www.google.com";
   } else {
-    url = decodeURIComponent(url);
+    try {
+      url = decodeURIComponent(url);
+    } catch (ex) {
+      //keep the url as is (eg: contains a raw %)
+    }
   }
 
   if (
@@ -85,6 +83,12 @@ exports.handler = async (event, context, callback) => {
 
   //var screenshotResult = await tools.screnshotForUrl(url, isFullPage, resX, resY, outFormat);
   var screenshotResult = null;
+
+  while (sharedmem.getInteger("nbPuppeteerProcess") >= maxConcurrency) {
+    await tools.sleep(20);
+  }
+
+  sharedmem.incInteger("nbPuppeteerProcess", 1);
 
   try {
     screenshotResult = await tools.screnshotForUrlTab(

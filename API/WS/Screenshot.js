@@ -50,17 +50,15 @@ exports.message = async (event, context, callback) => {
       var beginPipeline = process.hrtime();
       var proxy_server = process.env.PROXY_SERVER;
 
-      while (sharedmem.getInteger("nbPuppeteerProcess") >= maxConcurrency) {
-        await tools.sleep(20);
-      }
-
-      sharedmem.incInteger("nbPuppeteerProcess", 1);
-
       var url = obj.url;
       if (url == null || url == "") {
         url = "https://www.google.com";
       } else {
-        url = decodeURIComponent(url);
+        try {
+          url = decodeURIComponent(url);
+        } catch (ex) {
+          //keep the url as is (eg: contains a raw %)
+        }
       }
 
       if (
@@ -72,6 +70,12 @@ exports.message = async (event, context, callback) => {
 
       //var screenshotResult = await tools.screnshotForUrl(url, true);
       var screenshotResult = null;
+
+      while (sharedmem.getInteger("nbPuppeteerProcess") >= maxConcurrency) {
+        await tools.sleep(20);
+      }
+
+      sharedmem.incInteger("nbPuppeteerProcess", 1);
       try {
         screenshotResult = await tools.screnshotForUrlTab(
           url,
