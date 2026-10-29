@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 # Drop-in replacement for elestio/ws-screenshot.slim: same Chromium/Node/fonts (identical PDF output),
 # with the browser-leak fixes from API/ and tini as PID 1 to reap orphaned chromium processes.
-#   docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.patched -t <registry>/ws-screenshot:patched --push .
+#   docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.patched -t ghcr.io/wass08/ws-screenshot:<tag> --push .
 FROM elestio/ws-screenshot.slim:latest@sha256:c1a75d559374c632e7d0343ef4aad8f28f9859db4ffa968cd6917102b232ad56 AS base-amd64
 FROM elestio/ws-screenshot.slim:latest-arm@sha256:b5250263046145b1227b525ec1f2e2dbcc6d8acbe2c7d06eb31e7f88a13b2034 AS base-arm64
 
@@ -15,6 +15,8 @@ RUN case "${TARGETARCH}" in \
       arm64) sum=eae1d3aa50c48fb23b8cbdf4e369d0910dfc538566bfd09df89a774aa84a48b9 ;; \
     esac \
  && echo "${sum}  /tini" | sha256sum -c -
+
+LABEL org.opencontainers.image.source="https://github.com/wass08/ws-screenshot"
 
 WORKDIR /usr/src/app
 COPY API/ ./API/
